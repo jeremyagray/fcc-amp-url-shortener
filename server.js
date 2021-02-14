@@ -12,7 +12,7 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const express = require('express');
-// const favicon = require('serve-favicon');
+const favicon = require('serve-favicon');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
 const path = require('path');
@@ -89,14 +89,14 @@ async function start() {
     }));
 
     // Favicon serving middleware.
-    // app.use(favicon(path.join(process.cwd(), 'public', 'favicon.ico')));
+    app.use(favicon(path.join(process.cwd(), 'public', 'favicon.ico')));
     
     // Use body parser for post data.
     app.use(bodyParser.urlencoded({extended: false}));
     app.use(bodyParser.json());
 
     // Set static directory to root.
-    app.use('/public', express.static(path.join(process.cwd(), 'public')));
+    app.use(express.static(path.join(process.cwd(), 'public')));
 
     // Set view directory and view engine.
     app.set('views', path.join(process.cwd(), 'views'));

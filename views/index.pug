@@ -1,0 +1,14 @@
+doctype html
+html(lang="en")
+  head
+    link(id="favicon" rel="icon" href="/favicon.ico" type="image/x-icon")
+    link(href="/public/style.css" rel="stylesheet" type="text/css")
+    title URL Shortener
+  body
+    h1 URL Shortener
+    div(class="container")
+        h2 Create
+        form(action="api/shorturl/new" method="POST")
+          label(for="url_input") URL
+          input(id="url_input" type="text" name="url" value="https://www.grayfarms.org")
+          input(type="submit" value="Create")

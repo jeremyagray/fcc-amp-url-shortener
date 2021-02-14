@@ -8,25 +8,28 @@
 
 const {check, validationResult} = require('express-validator');
 
+const logger = require('../middleware/logger.js');
+
 // Validation error handlers.  Reuse everywhere.
 exports.validationErrorReporterJSON = function(request, response, next) {
   // Grab errors.
   const errors = validationResult(request);
 
   if (request.params.num) {
-    console.log(`num:  ${request.params.num}`);
+    logger.debug(`validation num:  ${request.params.num}`);
   } else {
-    console.log('num:  no number');
+    logger.debug('validation num:  no num in request');
   }
 
   if (request.body.url) {
-    console.log(`url:  ${request.body.url}`);
+    logger.debug(`validation num:  ${request.body.url}`);
   } else {
-    console.log('url:  no URL');
+    logger.debug('validation url:  no URL in request');
   }
 
   // Bail on errors.
   if (! errors.isEmpty()) {
+    logger.debug('validation failed');
     return response
       .json({'error': 'invalid URL'});
   }

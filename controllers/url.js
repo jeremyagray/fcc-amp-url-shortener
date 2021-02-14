@@ -12,21 +12,22 @@ const util = require('util');
 const lookup = util.promisify(dns.lookup);
 
 const URL = require('../models/url.js');
+const logger = require('../middleware/logger.js');
 
 exports.getURL = async function(request, response) {
   let num = parseInt(request.params.num);
-  console.log(`num:  ${request.params.num}`);
+  logger.debug(`request:  GET /api/shorturl/${num}}`);
 
   const urlModel = URL();
 
   try {
     const url = await urlModel.findOne({'num': num}).exec();
 
-    console.log(`found:  ${url}`);
+    logger.debug(`GET /api/shorturl/${num} found ${url}`);
     // Redirect to the found URL.
     return response.redirect(url.url);
   } catch {
-    console.log('could not lookup URL');
+    logger.debug(`GET /api/shorturl/${num} could not find URL`);
     return response.json({'error': 'invalid URL'});
   }
 };
@@ -34,7 +35,7 @@ exports.getURL = async function(request, response) {
 exports.newURL = async function(request, response) {
   // Get the URL.
   let url = request.body.url;
-  console.log(`url:  ${request.body.url}`);
+  logger.debug(`POST /api/shorturl url = ${url}`);
 
   // DNS fails with protocol prefix.
   let host;
@@ -43,14 +44,14 @@ exports.newURL = async function(request, response) {
   } else {
     // Edge case at best, since validation should block any URLs
     // without a valid protocol.
-    console.log('should not fail here');
+    logger.debug(`POST /api/shorturl ${url} is invalid and should have been caught by validation`);
     return response.json({'error': 'invalid URL'});
   }
 
   // Split route from host.
-  // console.log(`host:  ${host}`);
+  logger.debug(`POST /api/shorturl ${url} host without protocol:  ${host}`);
   [host,] = host.split(/\/(.*)/);
-  // console.log(`host:  ${host}`);
+  logger.debug(`POST /api/shorturl ${url} host without route:  ${host}`);
 
   try {
     await lookup(host);
@@ -59,17 +60,14 @@ exports.newURL = async function(request, response) {
       const urlModel = URL();
       const shortURL = await urlModel.create({'url': url});
 
-      console.log({
-        'original_url': url,
-        'short_url': shortURL.num
-      });
+      logger.debug(`POST /api/shorturl response:  { 'original_url': ${url}, 'short_url': ${shortURL.num} }`);
       return response
         .json({
           'original_url': url,
           'short_url': shortURL.num
         });
     } catch {
-      console.log('mongoDB failure');
+      logger.error(`POST /api/shorturl failed to create document for URL ${url}`);
       return response
         .status(500)
         .json({
@@ -78,7 +76,7 @@ exports.newURL = async function(request, response) {
     }
   } catch {
     // Bad host; report back.
-    console.log('dns failure');
+    logger.debug(`POST /api/shorturl dns.lookup(${host}) failed`);
     return response.json({'error': 'invalid URL'});
   }
 };

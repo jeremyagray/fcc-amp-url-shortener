@@ -16,7 +16,7 @@ const logger = require('../middleware/logger.js');
 
 exports.getURL = async function(request, response) {
   let num = parseInt(request.params.num);
-  logger.debug(`request:  GET /api/shorturl/${num}}`);
+  logger.debug(`request:  GET /api/shorturl/${num}`);
 
   const urlModel = URL();
 

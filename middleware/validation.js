@@ -13,6 +13,18 @@ exports.validationErrorReporterJSON = function(request, response, next) {
   // Grab errors.
   const errors = validationResult(request);
 
+  if (request.params.num) {
+    console.log(`num:  ${request.params.num}`);
+  } else {
+    console.log('num:  no number');
+  }
+
+  if (request.body.url) {
+    console.log(`url:  ${request.body.url}`);
+  } else {
+    console.log('url:  no URL');
+  }
+
   // Bail on errors.
   if (! errors.isEmpty()) {
     return response

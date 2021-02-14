@@ -22,7 +22,7 @@ const winston = require('winston');
 const runner = require('./runner.js');
 
 // Middleware.
-// const helmet = require('./middleware/helmet.js');
+const helmet = require('./middleware/helmet.js');
 const logger = require('./middleware/logger.js');
 
 // Routing.
@@ -80,7 +80,7 @@ async function start() {
     }
 
     // Helmet middleware.
-    // app.use(helmet.config);
+    app.use(helmet.config);
     
     // Use CORS.
     app.use(cors({

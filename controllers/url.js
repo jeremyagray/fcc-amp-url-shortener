@@ -6,41 +6,72 @@
 
 'use strict';
 
-exports.getNow = function(request, response) {
-  let now = new Date;
+// Ye gods.  Can't we just do promises yet?
+const dns = require('dns');
+const util = require('util');
+const lookup = util.promisify(dns.lookup);
 
-  return response
-    .status(200)
-    .json({
-      'unix': now.valueOf(),
-      'utc': now.toUTCString()
-    });
+const URL = require('../models/url.js');
+
+exports.getURL = async function(request, response) {
+  let num = parseInt(request.params.num);
+
+  const urlModel = URL();
+
+  try {
+    const url = await urlModel.findOne({'num': num}).exec();
+
+    // Redirect to the found URL.
+    return response.redirect(url.url);
+  } catch {
+    return response.json({'error': 'invalid URL'});
+  }
 };
 
-exports.getDateString = function(request, response) {
-  let now;
+exports.newURL = async function(request, response) {
+  // Get the URL.
+  let url = request.body.url;
+  console.log(`url:  ${request.body.url}`);
 
-  if (/^\d+$/.test(request.params.date_string)
-      && ! isNaN(parseInt(request.params.date_string))) {
-    now = new Date(parseInt(request.params.date_string));
+  // DNS fails with protocol prefix.
+  let host;
+  if (/:\/\//.test(url)) {
+    [, host] = url.split('://');
   } else {
-    now = new Date(request.params.date_string);
+    // Edge case at best, since validation should block any URLs
+    // without a valid protocol.
+    // console.log('should not fail here');
+    return response.json({'error': 'invalid URL'});
   }
 
-  if (now.toString() === 'Invalid Date') {
-    // FCC tests fail on status 400.
-    return response
-      // .status(400)
-      .json({
-        'error': 'Invalid Date'
-      });
-  } else {
+  // Split route from host.
+  // console.log(`host:  ${host}`);
+  [host,] = host.split(/\/(.*)/);
+  // console.log(`host:  ${host}`);
 
-    return response
-      .status(200)
-      .json({
-        'unix': now.valueOf(),
-        'utc': now.toUTCString()
-      });
+  try {
+    await lookup(host);
+    try {
+    // Good URL; store it in the database and report the shortened version.
+      const urlModel = URL();
+      const shortURL = await urlModel.create({'url': url});
+
+      return response
+        .json({
+          'original_url': url,
+          'short_url': shortURL.num
+        });
+    } catch {
+      // console.log('mongoDB failure');
+      return response
+        .status(500)
+        .json({
+          'error': 'server error'
+        });
+    }
+  } catch {
+    // Bad host; report back.
+    console.log('dns failure');
+    return response.json({'error': 'invalid URL'});
   }
 };

@@ -14,11 +14,9 @@ exports.validationErrorReporterJSON = function(request, response, next) {
   const errors = validationResult(request);
 
   // Bail on errors.
-  // FCC tests fail on status 400.
   if (! errors.isEmpty()) {
     return response
-      // .status(400)
-      .json({'error': 'Invalid Date'});
+      .json({'error': 'invalid URL'});
   }
 
   // Continue if no errors.
@@ -26,11 +24,21 @@ exports.validationErrorReporterJSON = function(request, response, next) {
 };
 
 // Validation rules.
-exports.validateDateString = [
-  check('date_string')
+exports.validateNumber = [
+  check('num')
     .notEmpty()
     .escape()
     .stripLow(true)
     .trim()
-    .withMessage('date_string should be a string parseable by new Date(date_string).')
+    .isInt({'min': 1})
+    .withMessage('`num` should be a number.')
+];
+
+exports.validateURL = [
+  check('url')
+    .notEmpty()
+    .stripLow(true)
+    .trim()
+    .isURL({'require_valid_protocol': true})
+    .withMessage('`url` should be a valid URL.')
 ];

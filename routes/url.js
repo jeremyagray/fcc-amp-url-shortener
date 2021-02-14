@@ -9,17 +9,20 @@
 const express = require('express');
 const router = express.Router();
 
-// const validation = require('../middleware/validation.js');
+const validation = require('../middleware/validation.js');
 
-// const timeController = require('../controllers/time.js');
+const urlController = require('../controllers/url.js');
 
-// router.get('',
-//   timeController.getNow
-// );
+router.post('/new',
+  validation.validateURL,
+  validation.validationErrorReporterJSON,
+  urlController.newURL
+);
 
-// router.get('/:date_string',
-//   validation.validateDateString,
-//   timeController.getDateString
-// );
+router.get('/:num',
+  validation.validateNumber,
+  validation.validationErrorReporterJSON,
+  urlController.getURL
+);
 
 module.exports = router;

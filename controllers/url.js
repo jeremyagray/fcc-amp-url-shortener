@@ -15,15 +15,18 @@ const URL = require('../models/url.js');
 
 exports.getURL = async function(request, response) {
   let num = parseInt(request.params.num);
+  console.log(`num:  ${request.params.num}`);
 
   const urlModel = URL();
 
   try {
     const url = await urlModel.findOne({'num': num}).exec();
 
+    console.log(`found:  ${url}`);
     // Redirect to the found URL.
     return response.redirect(url.url);
   } catch {
+    console.log('could not lookup URL');
     return response.json({'error': 'invalid URL'});
   }
 };
@@ -40,7 +43,7 @@ exports.newURL = async function(request, response) {
   } else {
     // Edge case at best, since validation should block any URLs
     // without a valid protocol.
-    // console.log('should not fail here');
+    console.log('should not fail here');
     return response.json({'error': 'invalid URL'});
   }
 
@@ -56,13 +59,17 @@ exports.newURL = async function(request, response) {
       const urlModel = URL();
       const shortURL = await urlModel.create({'url': url});
 
+      console.log({
+        'original_url': url,
+        'short_url': shortURL.num
+      });
       return response
         .json({
           'original_url': url,
           'short_url': shortURL.num
         });
     } catch {
-      // console.log('mongoDB failure');
+      console.log('mongoDB failure');
       return response
         .status(500)
         .json({

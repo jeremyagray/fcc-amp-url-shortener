@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: MIT
+/*
+ * SPDX-License-Identifier: MIT
  *
- * Copyright 2020 Jeremy A Gray <jeremy.a.gray@gmail.com>.
+ * Copyright 2020-2021 Jeremy A Gray <jeremy.a.gray@gmail.com>.
  */
 
 'use strict';
@@ -8,129 +9,218 @@
 // Load the environment variables.
 require('dotenv').config();
 
-// Enable node express and body parser.
-const dns = require('dns');
-const express = require('express');
 const bodyParser = require('body-parser');
+// const cors = require('cors');
+// const dns = require('dns');
+const express = require('express');
+// const favicon = require('serve-favicon');
+const mongoose = require('mongoose');
+const morgan = require('morgan');
+const path = require('path');
+const winston = require('winston');
+
+// Test runner.
+const runner = require('./runner.js');
+
+// Middleware.
+// const helmet = require('./middleware/helmet.js');
+const logger = require('./middleware/logger.js');
+
+// Routing.
+const helloRoute = require('./routes/hello.js');
+// const urlRoutes = require('./routes/url.js');
+
+// Express.
 const app = express();
 
-// Enable mongoDB, mongoose, and mongoose-sequence, and then connect to database.
-let mongoose = require('mongoose');
-const AutoIncrement = require('mongoose-sequence')(mongoose);
-mongoose.connect(process.env.MONGO_URI, {useNewUrlParser: true, useUnifiedTopology: true});
-
-// Mount middleware.
-// Body Parser.
-app.use('/', bodyParser.urlencoded({extended: false}));
-
-// Serve static files.
-app.use('/public', express.static(process.cwd() + '/public'));
-
-// Default route.
-app.get('/', (req, res) =>
-{
-  res.sendFile(process.cwd() + '/views/index.html');
-});
-
-  
-// Hello API endpoint. 
-app.get("/api/hello", (req, res) =>
-{
-  res.json({greeting: 'hello API'});
-});
-
-
-// Establish a URL model.
-const Schema = mongoose.Schema;
-const urlSchema = new Schema(
-{
-  url: {type: String, required: true},
-});
-urlSchema.plugin(AutoIncrement, {inc_field: 'num'});
-let URL = mongoose.model('URL', urlSchema);
-
-
-// URL Shortener API endpoint.
-app.post('/api/shorturl/new/', (req, res, next) =>
-{
-  // Get the POSTed URL.
-  let orig = req.body.url;
-
-  // Rudimentary URL validity check.
-  // Turns out DNS fails with protocol prefix.
-  let prefix, host;
-  if (/:\/\//.test(orig))
-  {
-    [prefix, host] = orig.split('://');
-  }
-  else
-  {
-    [prefix, host] = ['', orig];
-  }
-  // Default to http:// if prefix is empty.
-  if (prefix.length == 0)
-  {
-    prefix = 'http://';
-  }
-  else
-  {
-    prefix += '://';
-  }
-  // Rebuild URL.
-  const url = prefix + host;
-
-  dns.lookup(host, (error, address, family) =>
-  {
-    // Bad URL; report back.
-    if (error)
-    {
-      res.json({'error': 'invalid URL'});
-      return next(error);
-    }
-
-    // Good URL; store it in the database and report the shortened version.
-    let shortURL = new URL({'url': url});
-
-    shortURL.save((error, data) =>
-    {
-      if (error)
-      {
-        return next(error);
-      }
-
-      res.json({'original_url': orig, 'short_url': shortURL.num});
-    });
-  });
-});
-
-
-// URL Shortener Redirect API endpoint.
-app.get('/api/shorturl/:num(\\d+)', (req, res, next) =>
-{
-  // Lookup the URL.
-  let num = parseInt(req.params.num);
-  URL.find({'num': num}, (error, myURL) =>
-  {
-    if (error)
-    {
-      return next(error);
-    }
-    else if (myURL.length == 0)
-    {
-      res.json({'error': 'invalid URL'});
-      return next({message: 'Shortend URL ' + num + ' does not exist.'});
-    }
-
-    // Redirect to the URL.
-    res.redirect(myURL[0].url);
-  });
-});
-
-
-// Set the port.
+// Configuration variables.
 const port = process.env.PORT || 3000;
+const name = 'fcc-amp-url-shortener';
+const version = '0.0.3';
 
-app.listen(port, () =>
-{
-  console.log('Node.js listening on port ' + port + ' ...');
-});
+async function start() {
+  // Configure mongoose.
+  const MONGOOSE_OPTIONS = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false
+  };
+
+  try {
+    // Initialize mongoose connection.
+    await mongoose.connect(process.env.MONGO_URI, MONGOOSE_OPTIONS);
+
+    // Logging middleware.
+    if (process.env.NODE_ENV === 'development') {
+      // Development:  dump to console.
+      logger.clear();
+      logger.add(new winston.transports.Console({
+        'level': 'silly',
+        'format': winston.format.combine(
+          winston.format.colorize(),
+          winston.format.simple()
+        )}));
+      app.use(morgan('dev', {
+        'stream': {
+          'write': (message) => {
+            logger.info(message.trim());
+          }
+        }}));
+    } else if (process.env.NODE_ENV === 'test') {
+      // Testing:  silence for tests.
+      logger.clear();
+      logger.silent = true;
+    } else {
+      // Production:  defaults.
+      app.use(morgan('combined', {
+        'stream': {
+          'write': (message) => {
+            logger.info(message.trim());
+          }
+        }}));
+    }
+
+    // Helmet middleware.
+    // app.use(helmet.config);
+    
+    // Use CORS.
+    // app.use(cors({
+    //   origin: '*',
+    //   optionSuccessStatus: 200
+    // }));
+
+    // Favicon serving middleware.
+    // app.use(favicon(path.join(process.cwd(), 'public', 'favicon.ico')));
+    
+    // Use body parser for post data.
+    app.use(bodyParser.urlencoded({extended: false}));
+    app.use(bodyParser.json());
+
+    // Set static directory to root.
+    app.use(express.static(path.join(process.cwd(), 'public')));
+
+    // Set view directory and view engine.
+    app.set('views', path.join(process.cwd(), 'views'));
+    app.set('view engine', 'pug');
+
+    // Serve index.
+    app.route('/')
+      .get(function(request, response) {
+        return response.render('index');
+      });
+
+    // Application routes.
+    app.use('/api/hello', helloRoute);
+    // app.use('/api/shorturl', urlRoutes);
+    
+    // 404 middleware.
+    app.use((request, response) => {
+      return response
+        .status(404)
+        .render('404');
+    });
+
+    // Run server and/or tests.
+    await app.listen(port);
+    logger.info(`${name}@${version} listening on port ${port}`);
+    if (process.env.NODE_ENV === 'test'
+        || process.env.NODE_ENV === 'development') {
+      logger.info(`${name}@${version} preparing to run tests`);
+      setTimeout(function () {
+        try {
+          runner.run();
+        } catch (error) {
+          logger.info(`${name}@${version}:  some tests failed`);
+          logger.error(error);
+        }
+      }, 1500);
+    }
+  } catch (error) {
+    logger.error(error);
+    logger.error(`${name}@${version} cowardly refusing to continue with errors...`);
+  }
+}
+
+// Start the server.
+(async function() {
+  await start(); 
+})();
+
+// Export app for testing.
+module.exports = app;
+
+// // URL Shortener API endpoint.
+// app.post('/api/shorturl/new/', (req, res, next) =>
+// {
+//   // Get the POSTed URL.
+//   let orig = req.body.url;
+
+//   // Rudimentary URL validity check.
+//   // Turns out DNS fails with protocol prefix.
+//   let prefix, host;
+//   if (/:\/\//.test(orig))
+//   {
+//     [prefix, host] = orig.split('://');
+//   }
+//   else
+//   {
+//     [prefix, host] = ['', orig];
+//   }
+//   // Default to http:// if prefix is empty.
+//   if (prefix.length == 0)
+//   {
+//     prefix = 'http://';
+//   }
+//   else
+//   {
+//     prefix += '://';
+//   }
+//   // Rebuild URL.
+//   const url = prefix + host;
+
+//   dns.lookup(host, (error, address, family) =>
+//   {
+//     // Bad URL; report back.
+//     if (error)
+//     {
+//       res.json({'error': 'invalid URL'});
+//       return next(error);
+//     }
+
+//     // Good URL; store it in the database and report the shortened version.
+//     let shortURL = new URL({'url': url});
+
+//     shortURL.save((error, data) =>
+//     {
+//       if (error)
+//       {
+//         return next(error);
+//       }
+
+//       res.json({'original_url': orig, 'short_url': shortURL.num});
+//     });
+//   });
+// });
+
+
+// // URL Shortener Redirect API endpoint.
+// app.get('/api/shorturl/:num(\\d+)', (req, res, next) =>
+// {
+//   // Lookup the URL.
+//   let num = parseInt(req.params.num);
+//   URL.find({'num': num}, (error, myURL) =>
+//   {
+//     if (error)
+//     {
+//       return next(error);
+//     }
+//     else if (myURL.length == 0)
+//     {
+//       res.json({'error': 'invalid URL'});
+//       return next({message: 'Shortend URL ' + num + ' does not exist.'});
+//     }
+
+//     // Redirect to the URL.
+//     res.redirect(myURL[0].url);
+//   });
+// });

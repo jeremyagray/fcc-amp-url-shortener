@@ -10,7 +10,7 @@
 require('dotenv').config();
 
 const bodyParser = require('body-parser');
-// const cors = require('cors');
+const cors = require('cors');
 const express = require('express');
 // const favicon = require('serve-favicon');
 const mongoose = require('mongoose');
@@ -83,10 +83,10 @@ async function start() {
     // app.use(helmet.config);
     
     // Use CORS.
-    // app.use(cors({
-    //   origin: '*',
-    //   optionSuccessStatus: 200
-    // }));
+    app.use(cors({
+      origin: '*',
+      optionSuccessStatus: 200
+    }));
 
     // Favicon serving middleware.
     // app.use(favicon(path.join(process.cwd(), 'public', 'favicon.ico')));

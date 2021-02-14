@@ -103,14 +103,9 @@ async function start() {
     app.set('view engine', 'pug');
 
     // Serve index.
-    // Pug.
-    // app.route('/')
-    //   .get(function(request, response) {
-    //     return response.render('index');
-    //   });
     app.route('/')
       .get(function(request, response) {
-        return response.sendFile(path.join(process.cwd(), '/views/index.html'));
+        return response.render('index');
       });
 
     // Application routes.

@@ -59,7 +59,8 @@
       "test"
     ],
     "scopes": [
-      "url"
+      "url",
+      "views"
     ],
     "footers": [
       "signed-off-by"

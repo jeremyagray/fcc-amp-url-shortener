@@ -1,0 +1,63 @@
+{
+  "author": "Jeremy A Gray <jeremy.a.gray@gmail.com> (http://www.grayfarms.org/)",
+  "bugs": {
+    "url": "https://github.com/jeremyagray/fcc-amp-url-shortener/issues"
+  },
+  "dependencies": {},
+  "description": "FCC AMP URL Shortener App",
+  "devDependencies": {
+    "concurrently": "^5.3.0"
+  },
+  "directories": {},
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "homepage": "https://github.com/jeremyagray/fcc-amp-url-shortener",
+  "license": "MIT",
+  "main": "backend/server.js",
+  "name": "fcc-amp-urlshortener",
+  "pccc": {
+    "header_length": 50,
+    "body_length": 72,
+    "rewrap": true,
+    "spell_check": false,
+    "repair": false,
+    "types": [
+      "build",
+      "ci",
+      "depends",
+      "docs",
+      "feat",
+      "fix",
+      "perf",
+      "refactor",
+      "release",
+      "style",
+      "test"
+    ],
+    "scopes": [
+      "app",
+      "url",
+      "views"
+    ],
+    "footers": [
+      "signed-off-by"
+    ],
+    "required_footers": [
+      "signed-off-by"
+    ]
+  },
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm start\" \"cd frontend && npm start\" "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeremyagray/fcc-amp-url-shortener.git"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "react"
+  ],
+  "version": "0.1.0"
+}

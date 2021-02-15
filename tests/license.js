@@ -48,7 +48,7 @@ function findFiles(dir, ignoreDirs=[], extension='') {
   return files;
 }
 
-function generateTest(file) {
+async function generateTest(file) {
   it(`${file} should contain a license identifier`, function() {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     const fileContent = fs.readFileSync(file, {'encoding': 'utf-8'});
@@ -62,9 +62,9 @@ function generateTest(file) {
 (async function license() {
   const files = await findFiles('./', ignoreDirs, 'js');
 
-  describe('license identfier tests', function() {
-    files.forEach(function(file) {
-      generateTest(file);
+  describe('license identfier tests', async function() {
+    files.forEach(async function(file) {
+      await generateTest(file);
     });
   });
 })();

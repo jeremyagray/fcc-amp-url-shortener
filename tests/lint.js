@@ -21,7 +21,7 @@ function formatMessages(messages) {
   }).join('\n');
 }
 
-function generateTest(result) {
+async function generateTest(result) {
   it(`${result.filePath} should lint`, function() {
     if (result.messages.length > 0) {
       expect.fail(false, true, formatMessages(result.messages));
@@ -33,9 +33,9 @@ function generateTest(result) {
   const eslint = new ESLint();
   const results = await eslint.lintFiles('**/*.js');
 
-  describe('linting tests', function() {
-    results.forEach(function(result) {
-      generateTest(result);
+  describe('linting tests', async function() {
+    results.forEach(async function(result) {
+      await generateTest(result);
     });
   });
 })();

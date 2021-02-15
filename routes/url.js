@@ -13,6 +13,10 @@ const validation = require('../middleware/validation.js');
 
 const urlController = require('../controllers/url.js');
 
+router.get('/all',
+  urlController.getAll
+);
+
 router.post('/new',
   validation.validateURL,
   validation.validationErrorReporterJSON,

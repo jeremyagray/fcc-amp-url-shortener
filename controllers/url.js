@@ -32,6 +32,33 @@ exports.getURL = async function(request, response) {
   }
 };
 
+exports.getAll = async function(request, response) {
+  logger.debug('request:  GET /api/shorturl/all');
+
+  const urlModel = URL();
+
+  try {
+    const urls = await urlModel.find({}).sort({'num': 1}).exec();
+    let responseJSON = [];
+
+    urls.forEach((url) => {
+      responseJSON.push({
+        'original_url': url.url,
+        'short_url': url.num
+      });
+    });
+
+    return response.json(responseJSON);
+  } catch {
+    logger.debug('GET /api/shorturl/all failed to return documents');
+    return response
+      .status(500)
+      .json({
+        'error': 'server error'
+      });
+  }
+};
+
 exports.newURL = async function(request, response) {
   // Get the URL.
   let url = request.body.url;
@@ -56,7 +83,7 @@ exports.newURL = async function(request, response) {
   try {
     await lookup(host);
     try {
-    // Good URL; store it in the database and report the shortened version.
+      // Good URL; store it in the database and report the shortened version.
       const urlModel = URL();
       const shortURL = await urlModel.create({'url': url});
 
@@ -74,9 +101,10 @@ exports.newURL = async function(request, response) {
           'error': 'server error'
         });
     }
-  } catch {
+  } catch(error) {
     // Bad host; report back.
     logger.debug(`POST /api/shorturl dns.lookup(${host}) failed`);
+    logger.debug(`POST /api/shorturl errno:  ${error.errno} code:  ${error.code}`);
     return response.json({'error': 'invalid URL'});
   }
 };

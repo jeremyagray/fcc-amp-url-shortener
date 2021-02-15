@@ -53,7 +53,7 @@ describe('GET /api/shorturl/all', async function() {
       expect(response).to.have.status(200);
       expect(response.body).to.be.a('array');
       expect(returnedURLs.length).to.be.equal(goodURLs.length);
-      expect(returnedURLs).to.be.eql(goodURLs);
+      expect(returnedURLs.sort()).to.be.eql(goodURLs.sort());
     } catch (error) {
       console.log(error);
       throw error;

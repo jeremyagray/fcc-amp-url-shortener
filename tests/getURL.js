@@ -9,9 +9,7 @@
 const chai = require('chai');
 const expect = chai.expect;
 const chaiHttp = require('chai-http');
-const chaiDate = require('chai-datetime');
 
-chai.use(chaiDate);
 chai.use(chaiHttp);
 
 const server = require('../server.js');
@@ -27,6 +25,8 @@ describe('GET /api/shorturl/:num', async function() {
 
   before('add some test URLs', async function() {
     const urlModel = URL();
+    await urlModel.deleteMany({});
+
     goodURLs.forEach(async function(url) {
       await urlModel.create({'url': url});
     });
@@ -34,8 +34,9 @@ describe('GET /api/shorturl/:num', async function() {
     return;
   });
 
-  after('destroy the getURL test database', async function() {
-    await URL().deleteMany().exec();
+  after('clear the test database', async function() {
+    const urlModel = URL();
+    await urlModel.deleteMany({});
 
     return;
   });

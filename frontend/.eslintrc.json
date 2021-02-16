@@ -1,0 +1,19 @@
+{
+  "env": {
+    "commonjs": true,
+    "es2021": true,
+    "node": true,
+    "mocha": true
+  },
+  "extends": [
+    "plugin:jest-dom/recommended",
+    "plugin:testing-library/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 12
+  },
+  "plugins": [
+    "jest-dom",
+    "testing-library"
+  ]
+}

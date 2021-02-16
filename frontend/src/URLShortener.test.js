@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import URLShortenerApp from './URLShortener';
 import {
@@ -34,7 +34,7 @@ describe('URLShortenerCreatorAdded', function() {
     }
   ];
 
-  it('should render the added URLs if available', async () => {
+  it('should render the added URLs', async () => {
     await render(<URLShortenerCreatorAdded urls={data} />);
 
     for (let i = 0; i < data.length; i++) {
@@ -45,8 +45,14 @@ describe('URLShortenerCreatorAdded', function() {
     expect(await screen.findAllByText('was shortened to')).toHaveLength(5);
   });
 
-  it('should not render if there are no URLs', async () => {
+  it('should not render if there are null URLs', async () => {
     const {container} = await render(<URLShortenerCreatorAdded urls={null} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('should not render if there are no URLs', async () => {
+    const {container} = await render(<URLShortenerCreatorAdded urls={[]} />);
 
     expect(container).toBeEmptyDOMElement();
   });
@@ -112,9 +118,58 @@ describe('URLShortenerSelector', function() {
     }
   ];
 
+  describe('URLShortenerSelector select', function() {
+    const oldWindowLocation = window.location
+
+    beforeAll(() => {
+      delete window.location;
+
+      window.location = Object.defineProperties(
+        {},
+        {
+          ...Object.getOwnPropertyDescriptors(oldWindowLocation),
+          assign: {
+            configurable: true,
+            value: jest.fn(),
+          },
+        },
+      )
+    });
+
+    beforeEach(() => {
+      window.location.assign.mockReset();
+    });
+
+    afterAll(() => {
+      // restore `window.location` to the `jsdom` `Location` object
+      window.location = oldWindowLocation;
+    });
+
+    it('should render the added URLs if available', async () => {
+      await render(<URLShortenerSelector urls={data} errors={null} loading={false} />);
+
+      for (let i = 0; i < data.length; i++) {
+        const urlText = await screen.findByText(data[i].original_url)
+        expect(urlText).toBeInTheDocument();
+      }
+    });
+
+    it('should select the correct URL', async () => {
+      await render(<URLShortenerSelector urls={data} errors={null} loading={false} />);
+
+      // Select a URL.
+      for (let i = 0; i < data.length; i++) {
+        fireEvent.change(await document.getElementById('URLShortenerSelectorSelect'), {'target': {'value': "http://localhost:3001/api/shorturl/" + data[i].short_url}});
+        expect(window.location.assign).toHaveBeenCalledWith("http://localhost:3001/api/shorturl/" + data[i].short_url);
+      }
+
+      expect(window.location.assign).toHaveBeenCalledTimes(data.length)
+    });
+  });
+
   describe('URLShortenerSelector loading', function() {
     it('should render the loading message if loading', async () => {
-      await render(<URLShortenerSelector urls={data} errors={null} loading={true} />);
+      await render(<URLShortenerSelector urls={null} errors={null} loading={true} />);
 
       const loadingMessage = 'Loading...';
       const renderedMessage = await screen.findByText(loadingMessage);

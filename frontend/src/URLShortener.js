@@ -132,7 +132,7 @@ function URLShortenerCreatorAdded(props) {
 
 function URLShortenerSelector(props) {
   function getURL(event) {
-    document.location.href = event.target.value;
+    window.location.assign(event.target.value);
   }    
 
   if (props.loading) {
@@ -153,10 +153,10 @@ function URLShortenerSelector(props) {
     return (
       <div className="URLShortenerSelector">
         <form>
-          <select className="" onChange={getURL}>
-            <option value="">Select</option>
+          <select className="" id="URLShortenerSelectorSelect" onChange={getURL}>
+            <option value="" id="URLShortenerSelectorShortURL-default">Select</option>
             {props.urls.map((url) => (
-              <option key={url.short_url} value={"http://localhost:3001/api/shorturl/" + url.short_url}>{url.original_url}</option>
+              <option key={url.short_url} id={"URLShortenerSelectorShortURL-" + url.short_url} value={"http://localhost:3001/api/shorturl/" + url.short_url}>{url.original_url}</option>
             ))}
           </select>
         </form>

@@ -43,7 +43,7 @@ function URLShortenerApp() {
       setAddedURLs((addedURLs) => [...addedURLs, response.data]);
       setPostNewLoading(false);
     } catch (error) {
-      setPostNewError(error);
+      setPostNewError(error.message);
       setPostNewLoading(false);
     }
 
@@ -51,17 +51,30 @@ function URLShortenerApp() {
   }
 
   // Load the shortened URLs.
-  useEffect(async () => {
+  useEffect(() => {
+    let isMounted = true;
     setGetAllLoading(true);
 
-    try {
-      const results = await axios.get('http://localhost:3001/api/shorturl/all');
-      setShortURLs(results.data);
-      setGetAllLoading(false);
-    } catch (error) {
-      setGetAllError(error);
-      setGetAllLoading(false);
+    async function fetchData() {
+      try {
+        const results = await axios.get('http://localhost:3001/api/shorturl/all');
+        if (isMounted) {
+          setShortURLs(results.data);
+          setGetAllLoading(false);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setGetAllError(error.message);
+          setGetAllLoading(false);
+        }
+      }
     }
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [addedURLs]);
 
   document.title = 'URL Shortener';
@@ -70,7 +83,7 @@ function URLShortenerApp() {
     <div>
       <h1>URL Shortener</h1>
       <URLShortenerCreator url={currentURL} handleSubmit={postURL} handleURLInput={updateURL} urls={addedURLs} error={postNewError} loading={postNewLoading} />
-      <URLShortenerSelector urls={shortURLs} error={getAllLoading} loading={getAllError} />
+      <URLShortenerSelector urls={shortURLs} error={getAllError} loading={getAllLoading} />
     </div>
   );
 }
@@ -171,6 +184,7 @@ function URLShortenerSelector(props) {
 export default URLShortenerApp;
 
 export {
+  URLShortenerCreator,
   URLShortenerCreatorAdded,
   URLShortenerCreatorErrors,
   URLShortenerCreatorLoading,

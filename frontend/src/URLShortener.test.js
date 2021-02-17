@@ -1,7 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import axios from 'axios';
+
+// jest.mock('axios');
 
 import URLShortenerApp from './URLShortener';
 import {
+  URLShortenerCreator,
   URLShortenerCreatorAdded,
   URLShortenerCreatorErrors,
   URLShortenerCreatorLoading,
@@ -94,6 +98,103 @@ describe('URLShortenerCreatorLoading', function() {
   });
 });
 
+describe('URLShortenerCreator', function() {
+  // URL that can be changed by local handleURLInput();
+  let updatedURL;
+
+  const data = [
+    {
+      'original_url': 'https://www.google.com/',
+      'short_url': 1
+    },
+    {
+      'original_url': 'https://www.apple.com/',
+      'short_url': 2
+    },
+    {
+      'original_url': 'https://www.facebook.com/',
+      'short_url': 3
+    },
+    {
+      'original_url': 'https://www.netflix.com/',
+      'short_url': 4
+    },
+    {
+      'original_url': 'https://www.amazon.com/',
+      'short_url': 5
+    }
+  ];
+
+  function handleSubmit() {
+  }
+
+  function handleURLInput(event) {
+    updatedURL = event.target.value;
+  }
+
+  it('should have a label', async () => {
+    await render(<URLShortenerCreator url={''} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={null} loading={false} />);
+
+    const label = screen.getByLabelText(/url/i);
+
+    expect(label).toBeInTheDocument();
+  });
+
+  it('should render the create button', async () => {
+    await render(<URLShortenerCreator url={''} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={null} loading={false} />);
+    const createButton = await screen.findByRole('button', {'name': /create/i});
+
+    expect(createButton).toBeInTheDocument();
+  });
+
+  it('should render the text input', async () => {
+    await render(<URLShortenerCreator url={''} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={null} loading={false} />);
+    const input = await document.getElementById('url_input');
+
+    expect(input).toBeInTheDocument();
+  });
+
+  it('should display the current URL', async () => {
+    const url = 'http://www.gray';
+    await render(<URLShortenerCreator url={url} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={null} loading={false} />);
+
+    const currentURL = await document.getElementById('url_input').value;
+
+    expect(url).toBe(currentURL);
+  });
+
+  it('should update the current URL with changes', async () => {
+    const url = 'http://www.gray';
+    const newURL = 'http://www.grayfarms.org/';
+    await render(<URLShortenerCreator url={url} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={null} loading={false} />);
+
+    const input = await document.getElementById('url_input');
+    fireEvent.change(input, {'target': {'value': newURL}});
+
+    expect(newURL).toBe(updatedURL);
+  });
+
+  it('should render an error if available', async () => {
+    const error = 'There was an error.'
+
+    await render(<URLShortenerCreator url={''} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={error} loading={true} />);
+
+    const errorMessageRE = new RegExp(`Error:\\s+${error}`);
+    const errorMessage = await screen.findByText(errorMessageRE);
+
+    expect(errorMessage).toBeInTheDocument();
+  });
+
+  it('should render the loading message if loading', async () => {
+    await render(<URLShortenerCreator url={''} handleSubmit={handleSubmit} handleURLInput={handleURLInput} urls={null} error={null} loading={true} />);
+
+    const loadingMessage = 'Posting...';
+    const renderedMessage = await screen.findByText(loadingMessage);
+
+    expect(renderedMessage).toBeInTheDocument();
+  });
+});
+
 describe('URLShortenerSelector', function() {
   const data = [
     {
@@ -117,6 +218,13 @@ describe('URLShortenerSelector', function() {
       'short_url': 5
     }
   ];
+
+  it('should render the dropdown', async () => {
+    await render(<URLShortenerSelector urls={data} errors={null} loading={false} />);
+    const selector = await document.getElementById('URLShortenerSelectorSelect');
+
+    expect(selector).toBeInTheDocument();
+  });
 
   describe('URLShortenerSelector select', function() {
     const oldWindowLocation = window.location
@@ -211,37 +319,172 @@ describe('URLShortenerSelector', function() {
 });
 
 describe('URL Shortener App', function() {
+  const data = [
+    {
+      'original_url': 'https://www.google.com/',
+      'short_url': 1
+    },
+    {
+      'original_url': 'https://www.apple.com/',
+      'short_url': 2
+    },
+    {
+      'original_url': 'https://www.facebook.com/',
+      'short_url': 3
+    },
+    {
+      'original_url': 'https://www.netflix.com/',
+      'short_url': 4
+    },
+    {
+      'original_url': 'https://www.amazon.com/',
+      'short_url': 5
+    }
+  ];
 
-  // it('should render main headline', async () => {
-  //   await render(<URLShortenerApp />);
-  //   const headline = await screen.findByText(/url shortener/i);
-  //   expect(headline).toBeInTheDocument();
-  // });
+  it('should have the correct title', async () => {
+    const title = 'URL Shortener';
+    await render(<URLShortenerApp />);
+    await waitForElementToBeRemoved(() => screen.getByText(/loading\.\.\./i));
 
-  // it('should render main headline', async () => {
-  //   // await act(() => {
-  //   // render(<URLShortenerApp />, container);
-  //   render(<URLShortenerApp />);
-  //   const headline = await screen.findByText(/url shortener/i);
-  //   // });
-  //   expect(headline).toBeInTheDocument();
-  // });
+    expect(title).toBe(document.title);
+  });
 
-  // test('renders form title', () => {
-  //   render(<URLShortenerApp />);
-  //   const h2 = screen.getByText(/create url/i);
-  //   expect(h2).toBeInTheDocument();
-  // });
+  it('should render main headline', async () => {
+    await render(<URLShortenerApp />);
+    const headline = screen.getByRole('heading', /url shortener/i);
+    expect(headline).toBeInTheDocument();
+  });
+});
 
-  // it('should render form button', async () => {
-  //   await render(<URLShortenerApp />);
-  //   const createButton = await screen.findByRole('button', {'name': /create/i});
-  //   expect(createButton).toBeInTheDocument();
-  // });
+describe('URL Shortener App GET all', function() {
+  const data = [
+    {
+      'original_url': 'https://www.google.com/',
+      'short_url': 1
+    },
+    {
+      'original_url': 'https://www.apple.com/',
+      'short_url': 2
+    },
+    {
+      'original_url': 'https://www.facebook.com/',
+      'short_url': 3
+    },
+    {
+      'original_url': 'https://www.netflix.com/',
+      'short_url': 4
+    },
+    {
+      'original_url': 'https://www.amazon.com/',
+      'short_url': 5
+    }
+  ];
 
-  // test('renders list title', () => {
-  //   render(<URLShortenerApp />);
-  //   const h2 = screen.getByText(/links/i);
-  //   expect(h2).toBeInTheDocument();
-  // });
+  beforeEach(() => {
+    jest.spyOn(axios, 'get');
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should render mocked short URLs', async () => {
+    axios.get.mockResolvedValue({
+      'data': data,
+      'status': 200,
+      'statusText': 'OK'
+    });
+
+    await render(<URLShortenerApp />);
+    await waitForElementToBeRemoved(() => screen.getByText(/loading\.\.\./i));
+
+    for (let i = 0; i < data.length; i++) {
+      const urlText = await screen.findByText(data[i].original_url)
+      expect(urlText).toBeInTheDocument();
+    }
+  });
+
+  it('should render API errors', async () => {
+    axios.get.mockRejectedValue(new Error('database error'));
+
+    await render(<URLShortenerApp />);
+    await waitForElementToBeRemoved(() => screen.getByText(/loading\.\.\./i));
+
+    const errorMessage = await screen.findByText(/Error:\s+database error/i);
+
+    expect(errorMessage).toBeInTheDocument();
+  });
+});
+
+describe('URL Shortener App POST new', function() {
+  const data = [
+    {
+      'original_url': 'https://www.google.com/',
+      'short_url': 1
+    },
+    {
+      'original_url': 'https://www.apple.com/',
+      'short_url': 2
+    },
+    {
+      'original_url': 'https://www.facebook.com/',
+      'short_url': 3
+    },
+    {
+      'original_url': 'https://www.netflix.com/',
+      'short_url': 4
+    },
+    {
+      'original_url': 'https://www.amazon.com/',
+      'short_url': 5
+    }
+  ];
+
+  beforeEach(() => {
+    jest.spyOn(axios, 'post');
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should render a newly shortened URL', async () => {
+    axios.post.mockResolvedValue({
+      'data': data[0],
+      'status': 200,
+      'statusText': 'OK'
+    });
+
+    await render(<URLShortenerApp />);
+    await waitForElementToBeRemoved(() => screen.getByText(/loading\.\.\./i));
+
+    const input = await document.getElementById('url_input');
+    fireEvent.change(input, {'target': {'value': data[0].original_url}});
+    const createButton = await screen.findByRole('button', {'name': /create/i});
+    fireEvent.click(createButton);
+
+    // const shortURLText = await screen.findByText("http://localhost:3001/api/shorturl/" + data[0].short_url);
+    const shortURLText = await screen.findByText(data[0].short_url);
+    expect(shortURLText).toBeInTheDocument();
+    const urlText = await screen.findByText(data[0].original_url)
+    expect(urlText).toBeInTheDocument();
+  });
+
+  it('should render API errors', async () => {
+    axios.post.mockRejectedValue(new Error('database error'));
+
+    await render(<URLShortenerApp />);
+    await waitForElementToBeRemoved(() => screen.getByText(/loading\.\.\./i));
+
+    const input = await document.getElementById('url_input');
+    fireEvent.change(input, {'target': {'value': data[0].original_url}});
+    const createButton = await screen.findByRole('button', {'name': /create/i});
+    fireEvent.click(createButton);
+    await waitForElementToBeRemoved(() => screen.getByText(/posting\.\.\./i));
+
+    const errorMessage = await screen.findByText(/Error:\s+database error/i);
+
+    expect(errorMessage).toBeInTheDocument();
+  });
 });

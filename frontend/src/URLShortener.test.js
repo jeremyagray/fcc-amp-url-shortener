@@ -1,7 +1,15 @@
-import { act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
-import axios from 'axios';
+'use strict';
 
-// jest.mock('axios');
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved
+} from '@testing-library/react';
+
+import axios from 'axios';
 
 import URLShortenerApp from './URLShortener';
 import {
@@ -39,24 +47,22 @@ describe('URLShortenerCreatorAdded', function() {
   ];
 
   it('should render the added URLs', async () => {
-    await render(<URLShortenerCreatorAdded urls={data} />);
-
     for (let i = 0; i < data.length; i++) {
-      const urlText = await screen.findByText(data[i].original_url)
+      await render(<URLShortenerCreatorAdded url={data[i]} />);
+
+      const urlText = await document.getElementById('URLShortenerCreatorAdded-a')
       expect(urlText).toBeInTheDocument();
     }
-
-    expect(await screen.findAllByText('was shortened to')).toHaveLength(5);
   });
 
   it('should not render if there are null URLs', async () => {
-    const {container} = await render(<URLShortenerCreatorAdded urls={null} />);
+    const {container} = await render(<URLShortenerCreatorAdded url={null} />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('should not render if there are no URLs', async () => {
-    const {container} = await render(<URLShortenerCreatorAdded urls={[]} />);
+  it('should not render if the URL is an empty string', async () => {
+    const {container} = await render(<URLShortenerCreatorAdded url={''} />);
 
     expect(container).toBeEmptyDOMElement();
   });
@@ -464,10 +470,12 @@ describe('URL Shortener App POST new', function() {
     const createButton = await screen.findByRole('button', {'name': /create/i});
     fireEvent.click(createButton);
 
-    // const shortURLText = await screen.findByText("http://localhost:3001/api/shorturl/" + data[0].short_url);
-    const shortURLText = await screen.findByText(data[0].short_url);
-    expect(shortURLText).toBeInTheDocument();
-    const urlText = await screen.findByText(data[0].original_url)
+    // Wait to post and render.
+    await waitForElementToBeRemoved(() => screen.getByText(/posting\.\.\./i));
+
+    // Find added URL.
+    const urlTextRE = new RegExp(`\\s\*${data[0].short_url}\\s\*:\\s\*${data[0].original_url}\\s\*`);
+    const urlText = await screen.findByText(urlTextRE);
     expect(urlText).toBeInTheDocument();
   });
 

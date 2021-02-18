@@ -1,3 +1,5 @@
+'use strict';
+
 import React, {useState, useEffect} from 'react';
 import axios from 'axios';
 
@@ -7,7 +9,7 @@ function URLShortenerApp() {
   // New and shortened URLs.
   const [currentURL, setCurrentURL] = useState('');
   const [shortURLs, setShortURLs] = useState([]);
-  const [addedURLs, setAddedURLs] = useState([]);
+  const [addedURL, setAddedURL] = useState([]);
 
   // Loading statuses.
   const [getAllLoading, setGetAllLoading] = useState(false);
@@ -40,7 +42,8 @@ function URLShortenerApp() {
           'url': currentURL
         });
 
-      setAddedURLs((addedURLs) => [...addedURLs, response.data]);
+      // setAddedURLs((addedURLs) => [...addedURLs, response.data]);
+      setAddedURL(response.data);
       setPostNewLoading(false);
     } catch (error) {
       setPostNewError(error.message);
@@ -75,14 +78,14 @@ function URLShortenerApp() {
     return () => {
       isMounted = false;
     };
-  }, [addedURLs]);
+  }, [addedURL]);
 
   document.title = 'URL Shortener';
 
   return (
     <div>
       <h1>URL Shortener</h1>
-      <URLShortenerCreator url={currentURL} handleSubmit={postURL} handleURLInput={updateURL} urls={addedURLs} error={postNewError} loading={postNewLoading} />
+      <URLShortenerCreator url={currentURL} handleSubmit={postURL} handleURLInput={updateURL} added={addedURL} error={postNewError} loading={postNewLoading} />
       <URLShortenerSelector urls={shortURLs} error={getAllError} loading={getAllLoading} />
     </div>
   );
@@ -98,7 +101,7 @@ function URLShortenerCreator(props) {
       </form>
       <URLShortenerCreatorErrors error={props.error} />
       <URLShortenerCreatorLoading loading={props.loading} />
-      <URLShortenerCreatorAdded urls={props.urls} />
+      <URLShortenerCreatorAdded url={props.added} />
     </div>
   );
 }
@@ -128,14 +131,18 @@ function URLShortenerCreatorLoading(props) {
 }
 
 function URLShortenerCreatorAdded(props) {
-  if (props.urls && props.urls.length > 0) {
+  if (props.url) {
     return (
       <div className="URLShortenerCreatorAdded">
-        <ul>
-          {props.urls.map((url) => (
-            <li key={url.short_url}><a href={url.original_url}>{url.original_url}</a> was shortened to <a href={"http://localhost:3001/api/shorturl/" + url.short_url}>{url.short_url}</a></li>
-          ))}
-        </ul>
+        <p className="URLShortenerCreatorAdded-p">
+          <a
+            className="URLShortenerCreatorAdded-a"
+            id="URLShortenerCreatorAdded-a"
+            href={"http://localhost:3001/api/shorturl/" + props.url.short_url}
+          >
+            {props.url.short_url}:  {props.url.original_url}
+          </a>
+        </p>
       </div>
     );
   }

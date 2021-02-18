@@ -1,3 +1,21 @@
+# URL Shortener Full Stack Application
+
+## Roadmap
+
+### Front End
+
+1. Update URLShortenerCreator to handle existing URLs.
+1. Add URL deletion.
+1. Add sorting by number, URL, protocol, and popularity.
+1. Add user management.
+
+### Back End
+
+1. Check existence before adding new URLs.
+1. Add timestamps and frequency fields.
+1. Implement DELETE route.
+1. Add user management.
+
 # API Project: URL Shortener Microservice for freeCodeCamp
 
 [![Run on

@@ -9,7 +9,7 @@ function URLShortenerApp() {
   // New and shortened URLs.
   const [currentURL, setCurrentURL] = useState('');
   const [shortURLs, setShortURLs] = useState([]);
-  const [addedURL, setAddedURL] = useState([]);
+  const [addedURL, setAddedURL] = useState('');
 
   // Loading statuses.
   const [getAllLoading, setGetAllLoading] = useState(false);
@@ -42,7 +42,6 @@ function URLShortenerApp() {
           'url': currentURL
         });
 
-      // setAddedURLs((addedURLs) => [...addedURLs, response.data]);
       setAddedURL(response.data);
       setPostNewLoading(false);
     } catch (error) {
@@ -131,7 +130,7 @@ function URLShortenerCreatorLoading(props) {
 }
 
 function URLShortenerCreatorAdded(props) {
-  if (props.url) {
+  if (props.url && props.url !== '' && props.url.length !== 0) {
     return (
       <div className="URLShortenerCreatorAdded">
         <p className="URLShortenerCreatorAdded-p">

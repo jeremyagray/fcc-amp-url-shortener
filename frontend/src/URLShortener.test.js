@@ -66,6 +66,12 @@ describe('URLShortenerCreatorAdded', function() {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('should not render if the URL is an empty list', async () => {
+    const {container} = await render(<URLShortenerCreatorAdded url={[]} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
 });
 
 describe('URLShortenerCreatorErrors', function() {

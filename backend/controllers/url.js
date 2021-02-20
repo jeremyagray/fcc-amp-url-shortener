@@ -15,19 +15,32 @@ const URL = require('../models/url.js');
 const logger = require('../middleware/logger.js');
 
 exports.getURL = async function(request, response) {
-  let num = parseInt(request.params.num);
-  logger.debug(`request:  GET /api/shorturl/${num}`);
+  logger.debug(`request:  GET /api/shorturl/${request.params.num}`);
 
   const urlModel = URL();
 
   try {
-    const url = await urlModel.findOne({'num': num}).exec();
+    const filter = {'num': request.params.num};
+    const update = {
+      '$inc': {
+        'visits': 1
+      },
+      'lastVisitAt': Date.now()
+    };
+    const options = {
+      'new': true
+    };
 
-    logger.debug(`GET /api/shorturl/${num} found ${url}`);
+    const url = await urlModel.findOneAndUpdate(filter, update, options).exec();
+
+    logger.debug(`GET /api/shorturl/${request.params.num} found ${url}`);
+
+    // Set the number of visits in the header.
+    response.set('visits', url.visits);
     // Redirect to the found URL.
     return response.redirect(url.url);
   } catch {
-    logger.debug(`GET /api/shorturl/${num} could not find URL`);
+    logger.debug(`GET /api/shorturl/${request.params.num} could not find URL`);
     return response.json({'error': 'invalid URL'});
   }
 };
@@ -60,41 +73,79 @@ exports.getAll = async function(request, response) {
 };
 
 exports.newURL = async function(request, response) {
-  // Get the URL.
-  let url = request.body.url;
-  logger.debug(`POST /api/shorturl url = ${url}`);
+  logger.debug(`POST /api/shorturl/new ${request.body.url}`);
 
   // DNS fails with protocol prefix.
-  let host;
-  if (/:\/\//.test(url)) {
-    [, host] = url.split('://');
+  let protocol, host;
+  if (/:\/\//.test(request.body.url)) {
+    [protocol, host] = request.body.url.split('://');
   } else {
     // Edge case at best, since validation should block any URLs
     // without a valid protocol.
-    logger.debug(`POST /api/shorturl ${url} is invalid and should have been caught by validation`);
+    logger.debug(`POST /api/shorturl/new ${request.body.url} is invalid and should have been caught by validation`);
     return response.json({'error': 'invalid URL'});
   }
 
+  // Check if shortened URL already exists.
+  const urlModel = URL();
+
+  try {
+    const existingURL = await urlModel.findOne({'url': request.body.url}).exec();
+
+    if (existingURL) {
+      logger.debug(`POST /api/shorturl/new found existing ${request.body.url}:  ${existingURL.num}`);
+      // Return the existing URL.
+      return response
+        .json({
+          'original_url': existingURL.url,
+          'short_url': existingURL.num,
+          'url': existingURL.url,
+          'num': existingURL.num,
+          'protocol': existingURL.protocol,
+          'title': existingURL.title || existingURL.url,
+          'createdAt': existingURL.createdAt,
+          'updatedAt': existingURL.updatedAt,
+          'lastVisitAt': existingURL.lastVisitAt,
+          'visits': existingURL.visits
+        });
+    }
+  } catch(error) {
+    logger.error(`POST /api/shorturl/new ${request.body.url}:  ${error.message}`);
+  }
+
   // Split route from host.
-  logger.debug(`POST /api/shorturl ${url} host without protocol:  ${host}`);
+  logger.debug(`POST /api/shorturl/new ${request.body.url} host without protocol:  ${host}`);
   [host,] = host.split(/\/(.*)/);
-  logger.debug(`POST /api/shorturl ${url} host without route:  ${host}`);
+  logger.debug(`POST /api/shorturl/new ${request.body.url} host without route:  ${host}`);
 
   try {
     await lookup(host);
     try {
       // Good URL; store it in the database and report the shortened version.
-      const urlModel = URL();
-      const shortURL = await urlModel.create({'url': url});
+      const shortURL = await urlModel.create({
+        'url': request.body.url,
+        'protocol': protocol,
+        'title': request.body.title,
+        'updatedAt': Date.now(),
+        'lastVisitAt': Date.now()
+      });
 
-      logger.debug(`POST /api/shorturl response:  { 'original_url': ${url}, 'short_url': ${shortURL.num} }`);
+      logger.debug(`POST /api/shorturl/new response:  { 'original_url': ${shortURL.url}, 'short_url': ${shortURL.num} }`);
       return response
         .json({
-          'original_url': url,
-          'short_url': shortURL.num
+          'original_url': shortURL.url,
+          'short_url': shortURL.num,
+          'url': shortURL.url,
+          'num': shortURL.num,
+          'protocol': shortURL.protocol,
+          'title': shortURL.title || shortURL.url,
+          'createdAt': shortURL.createdAt,
+          'updatedAt': shortURL.updatedAt,
+          'lastVisitAt': shortURL.lastVisitAt,
+          'visits': shortURL.visits
         });
     } catch {
-      logger.error(`POST /api/shorturl failed to create document for URL ${url}`);
+      logger.error(`POST /api/shorturl/new failed to create document for URL ${request.body.url}`);
       return response
         .status(500)
         .json({
@@ -103,8 +154,8 @@ exports.newURL = async function(request, response) {
     }
   } catch(error) {
     // Bad host; report back.
-    logger.debug(`POST /api/shorturl dns.lookup(${host}) failed`);
-    logger.debug(`POST /api/shorturl errno:  ${error.errno} code:  ${error.code}`);
+    logger.debug(`POST /api/shorturl/new dns.lookup(${host}) failed`);
+    logger.debug(`POST /api/shorturl/new errno:  ${error.errno} code:  ${error.code}`);
     return response.json({'error': 'invalid URL'});
   }
 };

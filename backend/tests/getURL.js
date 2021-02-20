@@ -16,20 +16,69 @@ const server = require('../server.js');
 const URL = require('../models/url.js');
 
 describe('GET /api/shorturl/:num', async function() {
-  const goodURLs = [
-    'https://www.google.com/',
-    'https://www.cnn.com/',
-    'https://www.freecodecamp.org/',
-    'http://www.grayfarms.org/',
+  let goodURLs = [
+    {
+      'url': 'https://www.google.com/',
+      'num': 0,
+      'protocol': 'https',
+      'title': 'Google',
+      'visits': 0
+    },
+    {
+      'url': 'https://www.cnn.com/',
+      'num': 0,
+      'protocol': 'https',
+      'title': 'CNN',
+      'visits': 0
+    },
+    {
+      'url': 'https://www.freecodecamp.org/',
+      'num': 0,
+      'protocol': 'https',
+      'title': 'freeCodeCamp',
+      'visits': 0
+    },
+    {
+      'url': 'http://www.grayfarms.org/',
+      'num': 0,
+      'protocol': 'http',
+      'title': 'Gray Farms',
+      'visits': 0
+    },
+    {
+      'url': 'http://www.grayfarms.org/news/',
+      'num': 0,
+      'protocol': 'http',
+      'title': 'Gray Farms:  News',
+      'visits': 0
+    },
+    {
+      'url': 'ftp://www.gentoo.org/',
+      'num': 0,
+      'protocol': 'ftp',
+      'title': 'Gentoo FTP',
+      'visits': 0
+    },
   ];
-
+  
   before('add some test URLs', async function() {
     const urlModel = URL();
     await urlModel.deleteMany({});
 
-    goodURLs.forEach(async function(url) {
-      await urlModel.create({'url': url});
-    });
+    for (let i = 0; i < goodURLs.length; i++) {
+      const response = await urlModel.create({
+        // eslint-disable-next-line security/detect-object-injection
+        'url': goodURLs[i].url,
+        // eslint-disable-next-line security/detect-object-injection
+        'protocol': goodURLs[i].protocol,
+        'updatedAt': Date.now(),
+        'lastVisitAt': Date.now()
+      });
+
+      // console.log(response);
+      // eslint-disable-next-line security/detect-object-injection
+      goodURLs[i].num = response.num;
+    }
 
     return;
   });
@@ -43,13 +92,20 @@ describe('GET /api/shorturl/:num', async function() {
 
   it('should redirect to the correct URL', async function() {
     try {
-      goodURLs.forEach(async function(url, index) {
+      for (let i = 0; i < goodURLs.length; i++) {
         const response = await chai.request(server)
-          .get(`/api/shorturl/${index + 1}`);
+        // eslint-disable-next-line security/detect-object-injection
+          .get(`/api/shorturl/${goodURLs[i].num}`)
+          .redirects(0)
+          .send();
 
+        // console.log(response.header);
+        console.log(response);
         expect(response).to.have.status(302);
-        expect(response.header['location']).to.be.eql(url);
-      });
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.header['location']).to.be.eql(goodURLs[i].url);
+        expect(parseInt(response.header['visits'])).to.be.eql(1);
+      }
 
     } catch (error) {
       console.log(error);

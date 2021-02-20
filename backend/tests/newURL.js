@@ -9,20 +9,46 @@
 const chai = require('chai');
 const expect = chai.expect;
 const chaiHttp = require('chai-http');
+const chaiDate = require('chai-datetime');
 
 chai.use(chaiHttp);
+chai.use(chaiDate);
 
 const server = require('../server.js');
 const URL = require('../models/url.js');
 
 describe('POST /api/shorturl/new', async function() {
   const goodURLs = [
-    'https://www.google.com/',
-    'https://www.cnn.com/',
-    'https://www.freecodecamp.org/',
-    'http://www.grayfarms.org/',
-    'http://www.grayfarms.org/news/',
-    'ftp://www.gentoo.org/',
+    {
+      'url': 'https://www.google.com/',
+      'protocol': 'https',
+      'title': 'Google'
+    },
+    {
+      'url': 'https://www.cnn.com/',
+      'protocol': 'https',
+      'title': 'CNN'
+    },
+    {
+      'url': 'https://www.freecodecamp.org/',
+      'protocol': 'https',
+      'title': 'freeCodeCamp'
+    },
+    {
+      'url': 'http://www.grayfarms.org/',
+      'protocol': 'http',
+      'title': 'Gray Farms'
+    },
+    {
+      'url': 'http://www.grayfarms.org/news/',
+      'protocol': 'http',
+      'title': 'Gray Farms:  News'
+    },
+    {
+      'url': 'ftp://www.gentoo.org/',
+      'protocol': 'ftp',
+      'title': 'Gentoo FTP'
+    },
   ];
 
   const noProtocolURLs = [
@@ -69,23 +95,104 @@ describe('POST /api/shorturl/new', async function() {
     return;
   });
 
-  it('should save good URLs', async function() {
+  it('should save good URLs without titles', async function() {
     try {
-      goodURLs.forEach(async function(url, index) {
+      for (let i = 0; i < goodURLs.length; i++) {
         const response = await chai.request(server)
           .post('/api/shorturl/new')
-          .send({'url': url});
+        // eslint-disable-next-line security/detect-object-injection
+          .send({'url': goodURLs[i].url});
 
         expect(response).to.have.status(200);
         expect(response).to.have.json;
         expect(response.body).to.be.a('object');
         expect(response.body).to.have.property('original_url');
         expect(response.body).to.have.property('original_url')
-          .eql(url);
+        // eslint-disable-next-line security/detect-object-injection
+          .eql(goodURLs[i].url);
         expect(response.body).to.have.property('short_url');
-        expect(response.body).to.have.property('short_url').eql(index + 1);
-      });
+        expect(response.body).to.have.property('url');
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.body).to.have.property('url').eql(goodURLs[i].url);
+        expect(response.body).to.have.property('num');
+        expect(response.body).to.have.property('protocol');
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.body).to.have.property('protocol').eql(goodURLs[i].protocol);
+        expect(response.body).to.have.property('title');
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.body).to.have.property('title').eql(goodURLs[i].url);
 
+        const now = new Date();
+
+        expect(response.body).to.have.property('createdAt');
+        const created = new Date(response.body.createdAt);
+        expect(created).to.be.closeToTime(now, 5);
+
+        expect(response.body).to.have.property('updatedAt');
+        const updated = new Date(response.body.updatedAt);
+        expect(updated).to.be.closeToTime(now, 5);
+        expect(updated).to.be.afterOrEqualTime(created);
+
+        expect(response.body).to.have.property('lastVisitAt');
+        const lastVisit = new Date(response.body.lastVisitAt);
+        expect(lastVisit).to.be.closeToTime(now, 5);
+        expect(lastVisit).to.be.afterOrEqualTime(created);
+
+        expect(response.body).to.have.property('visits');
+        expect(response.body).to.have.property('visits').eql(0);
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  });
+
+  it('should save good URLs with titles', async function() {
+    try {
+      for (let i = 0; i < goodURLs.length; i++) {
+        const response = await chai.request(server)
+          .post('/api/shorturl/new')
+        // eslint-disable-next-line security/detect-object-injection
+          .send({'url': goodURLs[i].url, 'title': goodURLs[i].title});
+
+        expect(response).to.have.status(200);
+        expect(response).to.have.json;
+        expect(response.body).to.be.a('object');
+        expect(response.body).to.have.property('original_url');
+        expect(response.body).to.have.property('original_url')
+        // eslint-disable-next-line security/detect-object-injection
+          .eql(goodURLs[i].url);
+        expect(response.body).to.have.property('short_url');
+        expect(response.body).to.have.property('url');
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.body).to.have.property('url').eql(goodURLs[i].url);
+        expect(response.body).to.have.property('num');
+        expect(response.body).to.have.property('protocol');
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.body).to.have.property('protocol').eql(goodURLs[i].protocol);
+        expect(response.body).to.have.property('title');
+        // eslint-disable-next-line security/detect-object-injection
+        expect(response.body).to.have.property('title').eql(goodURLs[i].title);
+
+        const now = new Date();
+
+        expect(response.body).to.have.property('createdAt');
+        const created = new Date(response.body.createdAt);
+        expect(created).to.be.closeToTime(now, 10);
+
+        expect(response.body).to.have.property('updatedAt');
+        const updated = new Date(response.body.updatedAt);
+        expect(updated).to.be.closeToTime(now, 10);
+        expect(updated).to.be.afterOrEqualTime(created);
+
+        expect(response.body).to.have.property('lastVisitAt');
+        const lastVisit = new Date(response.body.lastVisitAt);
+        expect(lastVisit).to.be.closeToTime(now, 10);
+        expect(lastVisit).to.be.afterOrEqualTime(created);
+
+        expect(response.body).to.have.property('visits');
+        expect(response.body).to.have.property('visits').eql(0);
+      }
     } catch (error) {
       console.log(error);
       throw error;
@@ -143,6 +250,40 @@ describe('POST /api/shorturl/new', async function() {
         expect(response.body).to.have.property('error')
           .eql('invalid URL');
       });
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  });
+
+  it('should add URLs only once', async function() {
+    try {
+      const url = 'https://www.google.com/';
+      let response = await chai.request(server)
+        .post('/api/shorturl/new')
+        .send({'url': url});
+      const index = response.body.short_url;
+
+      expect(response).to.have.status(200);
+      expect(response).to.have.json;
+      expect(response.body).to.be.a('object');
+      expect(response.body).to.have.property('original_url');
+      expect(response.body).to.have.property('original_url')
+        .eql(url);
+      expect(response.body).to.have.property('short_url');
+
+      response = await chai.request(server)
+        .post('/api/shorturl/new')
+        .send({'url': url});
+
+      expect(response).to.have.status(200);
+      expect(response).to.have.json;
+      expect(response.body).to.be.a('object');
+      expect(response.body).to.have.property('original_url');
+      expect(response.body).to.have.property('original_url')
+        .eql(url);
+      expect(response.body).to.have.property('short_url');
+      expect(response.body).to.have.property('short_url').eql(index);
     } catch (error) {
       console.log(error);
       throw error;

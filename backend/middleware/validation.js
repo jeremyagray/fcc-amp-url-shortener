@@ -22,9 +22,15 @@ exports.validationErrorReporterJSON = function(request, response, next) {
   }
 
   if (request.body.url) {
-    logger.debug(`validation num:  ${request.body.url}`);
+    logger.debug(`validation url:  ${request.body.url}`);
   } else {
     logger.debug('validation url:  no URL in request');
+  }
+
+  if (request.body.title) {
+    logger.debug(`validation title:  ${request.body.title}`);
+  } else {
+    logger.debug('validation title:  no title in request');
   }
 
   // Bail on errors.
@@ -55,5 +61,13 @@ exports.validateURL = [
     .stripLow(true)
     .trim()
     .isURL({'require_valid_protocol': true})
-    .withMessage('`url` should be a valid URL.')
+    .withMessage('url should be a valid URL.')
+];
+
+exports.validateTitle = [
+  check('title')
+    .stripLow(true)
+    .trim()
+    .isString()
+    .withMessage('title should be a string.')
 ];

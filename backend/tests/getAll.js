@@ -27,9 +27,18 @@ describe('GET /api/shorturl/all', async function() {
     const urlModel = URL();
     await urlModel.deleteMany({});
 
-    goodURLs.forEach(async function(url) {
-      await urlModel.create({'url': url});
-    });
+    let protocol;
+    for (let i = 0; i < goodURLs.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection
+      [protocol,] = goodURLs[i].split('://');
+      await urlModel.create({
+        // eslint-disable-next-line security/detect-object-injection
+        'url': goodURLs[i],
+        'protocol': protocol,
+        'updatedAt': Date.now(),
+        'lastVisitAt': Date.now()
+      });
+    }
 
     return;
   });

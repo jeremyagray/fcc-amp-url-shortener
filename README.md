@@ -6,15 +6,18 @@
 
 1. Update URLShortenerCreator to handle existing URLs.
 1. Add URL deletion.
-1. Add sorting by number, URL, protocol, and popularity.
+1. Add sorting by number, URL, title, protocol, popularity, and times.
 1. Add user management.
 
 ### Back End
 
-1. Check existence before adding new URLs.
-1. Add timestamps and frequency fields.
-1. Implement DELETE route.
-1. Add user management.
+[] Refactor controller functions to separate route logic and database
+logic to ease testing.
+[] Implement DELETE route.
+[] Add user management.
+[] Generate coverage report when ran in 'test' mode.
+[x] Add timestamps, visits, protocol, and title fields.  (completed)
+[x] Check existence before adding new URLs.  (completed)
 
 # API Project: URL Shortener Microservice for freeCodeCamp
 

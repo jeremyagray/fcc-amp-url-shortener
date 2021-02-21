@@ -14,6 +14,7 @@ chai.use(chaiHttp);
 
 const server = require('../server.js');
 const URL = require('../models/url.js');
+const {createURL} = require('../controllers/url.js');
 
 describe('GET /api/shorturl/all', async function() {
   const goodURLs = [
@@ -27,17 +28,10 @@ describe('GET /api/shorturl/all', async function() {
     const urlModel = URL();
     await urlModel.deleteMany({});
 
-    let protocol;
+    // let protocol;
     for (let i = 0; i < goodURLs.length; i++) {
       // eslint-disable-next-line security/detect-object-injection
-      [protocol,] = goodURLs[i].split('://');
-      await urlModel.create({
-        // eslint-disable-next-line security/detect-object-injection
-        'url': goodURLs[i],
-        'protocol': protocol,
-        'updatedAt': Date.now(),
-        'lastVisitAt': Date.now()
-      });
+      await createURL({'url': goodURLs[i]});
     }
 
     return;

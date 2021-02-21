@@ -16,6 +16,7 @@ chai.use(chaiDate);
 
 const server = require('../server.js');
 const URL = require('../models/url.js');
+const {createURL} = require('../controllers/url.js');
 
 describe('POST /api/shorturl/new', async function() {
   const goodURLs = [
@@ -79,6 +80,7 @@ describe('POST /api/shorturl/new', async function() {
     '',
     '   ',
     'test',
+    undefined
   ];
 
   beforeEach('add some test URLs', async function() {
@@ -258,32 +260,21 @@ describe('POST /api/shorturl/new', async function() {
 
   it('should add URLs only once', async function() {
     try {
-      const url = 'https://www.google.com/';
-      let response = await chai.request(server)
+      // eslint-disable-next-line security/detect-object-injection
+      // const urlObj = await createURL({'url': goodURLs[i].url});
+      const urlObj = await createURL({'url': 'https://www.google.com/'});
+
+      const response = await chai.request(server)
         .post('/api/shorturl/new')
-        .send({'url': url});
-      const index = response.body.short_url;
+        .send({'url': 'https://www.google.com/'});
 
       expect(response).to.have.status(200);
-      expect(response).to.have.json;
+      expect(response).to.be.json;
       expect(response.body).to.be.a('object');
       expect(response.body).to.have.property('original_url');
-      expect(response.body).to.have.property('original_url')
-        .eql(url);
+      expect(response.body).to.have.property('original_url').eql(urlObj.url);
       expect(response.body).to.have.property('short_url');
-
-      response = await chai.request(server)
-        .post('/api/shorturl/new')
-        .send({'url': url});
-
-      expect(response).to.have.status(200);
-      expect(response).to.have.json;
-      expect(response.body).to.be.a('object');
-      expect(response.body).to.have.property('original_url');
-      expect(response.body).to.have.property('original_url')
-        .eql(url);
-      expect(response.body).to.have.property('short_url');
-      expect(response.body).to.have.property('short_url').eql(index);
+      expect(response.body).to.have.property('short_url').eql(urlObj.num);
     } catch (error) {
       console.log(error);
       throw error;

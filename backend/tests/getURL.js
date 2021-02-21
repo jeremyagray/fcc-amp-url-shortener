@@ -14,6 +14,7 @@ chai.use(chaiHttp);
 
 const server = require('../server.js');
 const URL = require('../models/url.js');
+const {createURL} = require('../controllers/url.js');
 
 describe('GET /api/shorturl/:num', async function() {
   let goodURLs = [
@@ -66,16 +67,9 @@ describe('GET /api/shorturl/:num', async function() {
     await urlModel.deleteMany({});
 
     for (let i = 0; i < goodURLs.length; i++) {
-      const response = await urlModel.create({
-        // eslint-disable-next-line security/detect-object-injection
-        'url': goodURLs[i].url,
-        // eslint-disable-next-line security/detect-object-injection
-        'protocol': goodURLs[i].protocol,
-        'updatedAt': Date.now(),
-        'lastVisitAt': Date.now()
-      });
+      // eslint-disable-next-line security/detect-object-injection
+      const response = await createURL({'url': goodURLs[i].url});
 
-      // console.log(response);
       // eslint-disable-next-line security/detect-object-injection
       goodURLs[i].num = response.num;
     }
@@ -99,8 +93,6 @@ describe('GET /api/shorturl/:num', async function() {
           .redirects(0)
           .send();
 
-        // console.log(response.header);
-        console.log(response);
         expect(response).to.have.status(302);
         // eslint-disable-next-line security/detect-object-injection
         expect(response.header['location']).to.be.eql(goodURLs[i].url);

@@ -66,6 +66,25 @@ class URLError extends Error {
 
 exports.URLError;
 
+class ShortURLError extends Error {
+  constructor(num, ...params) {
+    // Call the super.
+    super(...params);
+
+    // Maintains proper stack trace.
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ShortURLError);
+    }
+
+    this.name = 'ShortURLError';
+    this.num = num;
+    this.message = `${num} is not a valid shortened url.`;
+    this.date = new Date();
+  }
+}
+
+exports.ShortURLError;
+
 /*
  * Utility functions.
  *
@@ -181,6 +200,7 @@ async function createURL(urlObj) {
       logger.debug(`createURL created new URL ${urlObj.url}:  ${shortURL.num}`);
       return await urlModel.create({
         'url': urlObj.url,
+        'deleted': urlObj.deleted,
         'protocol': getURLProtocol(urlObj.url),
         'title': urlObj.title || urlObj.url,
         'updatedAt': Date.now(),
@@ -212,7 +232,7 @@ async function getURL(request, response) {
   const urlModel = URL();
 
   try {
-    const filter = {'num': request.params.num};
+    const filter = {'num': request.params.num, 'deleted': false};
     const update = {
       '$inc': {
         'visits': 1
@@ -225,15 +245,21 @@ async function getURL(request, response) {
 
     const url = await urlModel.findOneAndUpdate(filter, update, options).exec();
 
-    logger.debug(`GET /api/shorturl/${request.params.num} found ${url}`);
+    if (url) {
+      logger.debug(`GET /api/shorturl/${request.params.num} found ${url}`);
 
-    // Set the number of visits in the header.
-    response.set('visits', url.visits);
-    // Redirect to the found URL.
-    return response.redirect(url.url);
-  } catch {
+      // Set the number of visits in the header.
+      response.set('visits', url.visits);
+      // Redirect to the found URL.
+      return response.redirect(url.url);
+    } else {
+      throw new ShortURLError(request.params.num);
+    }
+  } catch (error) {
     logger.debug(`GET /api/shorturl/${request.params.num} could not find URL`);
-    return response.json({'error': 'invalid URL'});
+    return response
+      .status(400)
+      .json({'error': 'invalid URL'});
   }
 }
 
@@ -267,6 +293,35 @@ async function getAll(request, response) {
 }
 
 exports.getAll = getAll;
+
+async function getVisible(request, response) {
+  logger.debug('request:  GET /api/shorturl/visible');
+
+  const urlModel = URL();
+
+  try {
+    const urls = await urlModel.find({'deleted': false}).sort({'num': 1}).exec();
+    let responseJSON = [];
+
+    urls.forEach((url) => {
+      responseJSON.push({
+        'original_url': url.url,
+        'short_url': url.num
+      });
+    });
+
+    return response.json(responseJSON);
+  } catch {
+    logger.error('GET /api/shorturl/visible failed to return documents');
+    return response
+      .status(500)
+      .json({
+        'error': 'server error'
+      });
+  }
+}
+
+exports.getVisible = getVisible;
 
 async function newURL(request, response) {
   logger.debug(`POST /api/shorturl/new ${request.body.url}`);
@@ -307,3 +362,55 @@ async function newURL(request, response) {
 }
 
 exports.newURL = newURL;
+
+async function deleteURL(request, response) {
+  logger.debug(`DELETE /api/shorturl/:num ${request.params.num}`);
+
+  const urlModel = URL();
+
+  try {
+    const filter = {'num': request.params.num};
+    let update = {
+    };
+    const options = {
+      'new': true
+    };
+
+    let url = await urlModel.findOne(filter).exec();
+    let message = '';
+
+    if (! url) {
+      throw new ShortURLError(request.params.num);
+    } else if (url.deleted) {
+      update.deleted = false;
+      logger.debug(`DELETE /api/shorturl/${request.params.num} undeleted`);
+      message = `${request.params.num} undeleted`;
+    } else {
+      update.deleted = true;
+      logger.debug(`DELETE /api/shorturl/${request.params.num} deleted`);
+      message = `${request.params.num} deleted`;
+    }
+
+    url = await urlModel.findOneAndUpdate(filter, update, options).exec();
+
+    return response
+      .status(200)
+      .json({'message': message});
+  } catch (error) {
+    if (error instanceof ShortURLError) {
+      logger.debug(`DELETE /api/shorturl/${request.params.num} could not find URL`);
+      return response
+        .status(400)
+        .json({'error': 'invalid URL'});
+    } else {
+      logger.error(`DELETE /api/shorturl/${request.params.num} could not be completed`);
+      return response
+        .status(500)
+        .json({
+          'error': 'server error'
+        });
+    }
+  }
+}
+
+exports.deleteURL = deleteURL;

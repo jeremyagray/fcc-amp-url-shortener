@@ -16,51 +16,11 @@ const server = require('../server.js');
 const URL = require('../models/url.js');
 const {createURL} = require('../controllers/url.js');
 
-describe('GET /api/shorturl/:num', async function() {
-  let goodURLs = [
-    {
-      'url': 'https://www.google.com/',
-      'num': 0,
-      'protocol': 'https',
-      'title': 'Google',
-      'visits': 0
-    },
-    {
-      'url': 'https://www.cnn.com/',
-      'num': 0,
-      'protocol': 'https',
-      'title': 'CNN',
-      'visits': 0
-    },
-    {
-      'url': 'https://www.freecodecamp.org/',
-      'num': 0,
-      'protocol': 'https',
-      'title': 'freeCodeCamp',
-      'visits': 0
-    },
-    {
-      'url': 'http://www.grayfarms.org/',
-      'num': 0,
-      'protocol': 'http',
-      'title': 'Gray Farms',
-      'visits': 0
-    },
-    {
-      'url': 'http://www.grayfarms.org/news/',
-      'num': 0,
-      'protocol': 'http',
-      'title': 'Gray Farms:  News',
-      'visits': 0
-    },
-    {
-      'url': 'ftp://www.gentoo.org/',
-      'num': 0,
-      'protocol': 'ftp',
-      'title': 'Gentoo FTP',
-      'visits': 0
-    },
-  ];
+// Fixtures.
+const {fixtureURLs} = require('./fixtures.js');
+
+describe('GET /api/shorturl/:num not deleted', async function() {
+  let goodURLs = [...fixtureURLs];
   
   before('add some test URLs', async function() {
     const urlModel = URL();
@@ -131,6 +91,51 @@ describe('GET /api/shorturl/:num', async function() {
         expect(response.body).to.have.property('error')
           .eql('invalid URL');
       });
+
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  });
+});
+
+describe('GET /api/shorturl/:num deleted', async function() {
+  let goodURLs = [...fixtureURLs];
+  
+  before('add some test URLs', async function() {
+    const urlModel = URL();
+    await urlModel.deleteMany({});
+
+    for (let i = 0; i < goodURLs.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection
+      const response = await createURL({'url': goodURLs[i].url, 'deleted': true});
+      // eslint-disable-next-line security/detect-object-injection
+      goodURLs[i].num = response.num;
+    }
+
+    return;
+  });
+
+  after('clear the test database', async function() {
+    const urlModel = URL();
+    await urlModel.deleteMany({});
+
+    return;
+  });
+
+  it('should fail on deleted URLs', async function() {
+    try {
+      for (let i = 0; i < goodURLs.length; i++) {
+        const response = await chai.request(server)
+        // eslint-disable-next-line security/detect-object-injection
+          .get(`/api/shorturl/${goodURLs[i].num}`);
+
+        expect(response).to.have.status(400);
+        expect(response).to.be.json;
+        expect(response.body).to.be.a('object');
+        expect(response.body).to.have.property('error');
+        expect(response.body).to.have.property('error').eql('invalid URL');
+      }
 
     } catch (error) {
       console.log(error);

@@ -37,6 +37,7 @@ exports.validationErrorReporterJSON = function(request, response, next) {
   if (! errors.isEmpty()) {
     logger.debug('validation failed');
     return response
+      .status(400)
       .json({'error': 'invalid URL'});
   }
 
@@ -51,6 +52,7 @@ exports.validateNumber = [
     .escape()
     .stripLow(true)
     .trim()
+    .isNumeric()
     .isInt({'min': 1})
     .withMessage('`num` should be a number.')
 ];

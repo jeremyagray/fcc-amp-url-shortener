@@ -47,6 +47,11 @@ const urlSchema = new mongoose.Schema(
       'required': true,
       'default': 0,
       'min': 0
+    },
+    'deleted': {
+      'type': Boolean,
+      'required': true,
+      'default': false
     }
   });
 

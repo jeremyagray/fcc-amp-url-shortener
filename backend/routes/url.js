@@ -17,6 +17,10 @@ router.get('/all',
   urlController.getAll
 );
 
+router.get('/visible',
+  urlController.getVisible
+);
+
 router.post('/new',
   validation.validateURL,
   validation.validationErrorReporterJSON,
@@ -27,6 +31,12 @@ router.get('/:num',
   validation.validateNumber,
   validation.validationErrorReporterJSON,
   urlController.getURL
+);
+
+router.delete('/:num',
+  validation.validateNumber,
+  validation.validationErrorReporterJSON,
+  urlController.deleteURL
 );
 
 module.exports = router;

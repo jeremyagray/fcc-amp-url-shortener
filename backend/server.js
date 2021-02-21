@@ -35,7 +35,7 @@ const app = express();
 // Configuration variables.
 const port = process.env.PORT || 3000;
 const name = 'fcc-amp-url-shortener';
-const version = '0.3.0';
+const version = '0.4.0';
 
 async function start() {
   // Configure mongoose.

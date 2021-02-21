@@ -11,13 +11,13 @@
 
 ### Back End
 
-[] Refactor controller functions to separate route logic and database
-logic to ease testing.
 [] Implement DELETE route.
 [] Add user management.
 [] Generate coverage report when ran in 'test' mode.
 [x] Add timestamps, visits, protocol, and title fields.  (completed)
 [x] Check existence before adding new URLs.  (completed)
+[x] Refactor controller functions to separate route logic and database
+logic to ease testing.
 
 # API Project: URL Shortener Microservice for freeCodeCamp
 
